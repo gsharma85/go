@@ -3,7 +3,6 @@ package main
 import (
 	. "github.com/gsharma85/go/sensor/internal/core"
 	. "github.com/gsharma85/go/sensor/internal/data"
-	_ "github.com/gsharma85/go/sensor/pkg/grpc"
 )
 
 func main() {
