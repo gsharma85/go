@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package sense;
+
+message SensedData {
+	string process = 1;
+	string parentProcess = 2;
+	string action = 3;
+	string time = 4;
+	map<string,string> tags = 5;
+}
+
+message AckEvent {
+	int32 ack = 1;
+}
+
+service SensorDataService {
+	rpc senseData(stream SensedData) returns (AckEvent);
+}

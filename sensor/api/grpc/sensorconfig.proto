@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package config;
+
+message SensorConfigEvent {
+	string process = 1;
+	string parentProcess = 2;
+	map<string,string> tags = 3;
+}
+
+message AckEvent {
+	int32 ack = 1;
+}
+
+service SensorConfigService {
+	rpc configureSensor(stream SensorConfigEvent) returns (AckEvent);
+}
