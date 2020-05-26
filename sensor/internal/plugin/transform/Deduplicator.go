@@ -19,7 +19,11 @@ func (deDup DeDuplicator) Transform(inChan chan SenseEvent) chan SenseEvent {
 		ticker := time.NewTicker(deDup.DeDupInterval)
 		for {
 			select {
-			case sensedEvent, _:= <- inChan:
+			case sensedEvent, open:= <- inChan:
+			if !open {
+				close(deDup.OutChannel)
+				return
+			}
 			log.Println("Got an event for deduplication: %s", sensedEvent)
 			groupByKey,eventKey := deDup.DeDupKeyGen(sensedEvent)
 			eventMapForKey,exists := eventMap[eventKey]
@@ -39,6 +43,7 @@ func (deDup DeDuplicator) Transform(inChan chan SenseEvent) chan SenseEvent {
 			case _, open := <- ticker.C:
 			if !open {
 				close(deDup.OutChannel)
+				return
 			}
 			if len(eventMap) <= 0 {
 				break
@@ -62,6 +67,7 @@ func (deDup DeDuplicator) Transform(inChan chan SenseEvent) chan SenseEvent {
 			case _, open := <- deDup.StopSignal:
 			if !open {
 				close(deDup.OutChannel)
+				return
 			}
 			}
 		}
