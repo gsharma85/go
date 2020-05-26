@@ -20,4 +20,6 @@ type SenseEvent struct {
 type SenseConfig struct {
 	StopSignal chan struct{}
 	DirName string
+	DeDupInterval time.Duration
+	DeDupKeyGen func(senseEvent SenseEvent) (groupByKey string, eventKey string)
 }
