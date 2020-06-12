@@ -10,6 +10,7 @@ import (
 func main() {
 	
 	dir := flag.String("d", "directory", "directory to watch")
+	logfile := flag.String("lf", "log file", "where event logs will be writtern")
 	flag.Parse()
 	
 	stopChan := make(chan struct{})
@@ -17,9 +18,9 @@ func main() {
 		return senseEvent.Action,senseEvent.Key
 	}
 	
-	senseConfig := SenseConfig{stopChan, *dir, 100 * time.Millisecond, keyGenFun}
+	senseConfig := SenseConfig{stopChan, *dir, 100 * time.Millisecond, keyGenFun, *logfile}
 	
-	StartSensorPipeline("file", []string{"deduplicator"} , "console", senseConfig)
+	StartSensorPipeline("file", []string{"deduplicator"} , "filelog", senseConfig)
 	
 	<- stopChan
 }

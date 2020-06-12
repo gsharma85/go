@@ -22,4 +22,5 @@ type SenseConfig struct {
 	DirName string
 	DeDupInterval time.Duration
 	DeDupKeyGen func(senseEvent SenseEvent) (groupByKey string, eventKey string)
+	Logfile string
 }

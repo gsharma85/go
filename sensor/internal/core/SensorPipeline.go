@@ -58,6 +58,12 @@ func getDepositor(name string, senseConfig SenseConfig) Depositor {
 			log.Fatal("Exiting application due to errors while creating Console logger.")
 		}
 		return logger
+	case "filelog": 
+		logger, ok := CreateFileLogDepositor(senseConfig)
+		if !ok {
+			log.Fatal("Exiting application due to errors while creating File logger.")
+		}
+		return logger	
 	}
 	return nil
 }
