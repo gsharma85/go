@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-sensor-deployment
+spec:
+  selector:
+    matchLabels:
+      name: go-sensor
+  template:
+    metadata:
+      labels:
+        name: go-sensor
+    spec:
+      containers:
+      - name: sensor
+        image: gauravsharmanitk/sensor
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 3000
+      imagePullSecrets:
+      - name: myregistrykey
