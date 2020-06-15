@@ -21,9 +21,7 @@ RUN echo "[url \"git@github.com:\"]\n\tinsteadOf = https://github.com/" >> /root
 RUN echo "StrictHostKeyChecking no" > /root/.ssh/config
 RUN mkdir /root/gotest
 WORKDIR /
-RUN /root/.ssh/go-get.sh /root/.ssh/id_rsa /root/.ssh/passfile  
-    #ssh -T git@github.com
-    #git clone git@github.com:gsharma85/go.git
+RUN /root/.ssh/go-get.sh /root/.ssh/id_rsa /root/.ssh/passfile
 
 
 CMD ["/go/bin/sensor", "-d" , "/root/gotest", "-lf", "/root/sensor.log"]
