@@ -12,7 +12,7 @@ type ActorState struct {
 
 type ActorProcessor struct {
 	CommandProcessor map[string]func(ActorCommand, ActorState) ActorResponse
-	SelfCommandMap map[string]ActorCommand
+	TimedCommands map[string]ActorCommand
 }
 
 type ActorCommand struct {
@@ -36,11 +36,11 @@ type Actor struct {
 	stopActorSystemSignal chan struct{} 
 }
 
-func CreateActor(name string, address string, commandProcessors map[string]func(ActorCommand, ActorState) ActorResponse, selfCommandMap map[string]ActorCommand, stopActorSystemSignal chan struct{}) *Actor {
+func CreateActor(name string, address string, commandProcessors map[string]func(ActorCommand, ActorState) ActorResponse, TimedCommands map[string]ActorCommand, stopActorSystemSignal chan struct{}) *Actor {
 	inChan := make(chan ActorCommand)
 	outChan := make(chan ActorResponse)
 	state := ActorState{make(map[string]interface{})}
-	processor := ActorProcessor{commandProcessors, selfCommandMap}
+	processor := ActorProcessor{commandProcessors, TimedCommands}
 	actor := Actor{name, address, processor, inChan, outChan, state, stopActorSystemSignal}
 	
 	// Load generic commands like buildActorState, passivateActor, getState
@@ -60,6 +60,8 @@ func CreateActor(name string, address string, commandProcessors map[string]func(
 				processor := actor.processor.CommandProcessor[actorCommand.Name]
 				response := processor(actorCommand, actor.State)
 				outChan <- response
+				
+				// Close all the self go routines if this was a passivate command
 				if actorCommand.Name == "passivateActor" {
 					close(closeActorSelfGoRoutines)
 					return
@@ -77,8 +79,8 @@ func CreateActor(name string, address string, commandProcessors map[string]func(
 	
 	
 	// Start actor self commands
-	if selfCommandMap != nil && len(selfCommandMap) > 0 {
-		for name, command := range selfCommandMap {
+	if TimedCommands != nil && len(TimedCommands) > 0 {
+		for name, command := range TimedCommands {
 			ticker := time.NewTicker(500 * time.Millisecond)
 			go func(name string, command ActorCommand, actorInChan chan ActorCommand, closeActorSelfGoRoutines chan struct{}) {
 				for {
