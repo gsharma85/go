@@ -4,7 +4,7 @@ import (
 
 )
 
-func CreateActorSystem(configFile string) chan ActorCommand {
+func CreateActorSystem(configFile string) chan Command {
 
 	//actorMap := make(map[string]*Actor)
 	

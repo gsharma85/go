@@ -5,23 +5,23 @@ import (
 	"log"
 )
 
-type ActorState struct {
+type State struct {
 	data map[string]interface{}
 }
 
 
-type ActorProcessor struct {
-	CommandProcessor map[string]func(ActorCommand, ActorState) ActorResponse
-	TimedCommands map[string]ActorCommand
+type Processor struct {
+	CommandProcessor map[string]func(Command, State) Response
+	TimedCommands map[string]Command
 }
 
-type ActorCommand struct {
+type Command struct {
 	Name string
 	CommandTime time.Time
 	Payload interface{}
 }
 
-type ActorResponse struct {
+type Response struct {
 	CommandName string
 	Response interface{}
 }
@@ -29,50 +29,50 @@ type ActorResponse struct {
 type Actor struct {
 	Name string
 	Address string
-	processor ActorProcessor
-	InChan chan ActorCommand
-	OutChan chan ActorResponse
-	State ActorState
+	processor Processor
+	InChan chan Command
+	OutChan chan Response
+	State State
 	stopActorSystemSignal chan struct{} 
 }
 
-func CreateActor(name string, address string, commandProcessors map[string]func(ActorCommand, ActorState) ActorResponse, timedCommands map[string]ActorCommand, stopActorSystemSignal chan struct{}) *Actor {
-	inChan := make(chan ActorCommand)
-	outChan := make(chan ActorResponse)
-	state := ActorState{make(map[string]interface{})}
-	processor := ActorProcessor{commandProcessors, timedCommands}
+func New(name string, address string, commandProcessors map[string]func(Command, State) Response, timedCommands map[string]Command, stopActorSystemSignal chan struct{}) *Actor {
+	inChan := make(chan Command)
+	outChan := make(chan Response)
+	state := State{make(map[string]interface{})}
+	processor := Processor{commandProcessors, timedCommands}
 	actor := Actor{name, address, processor, inChan, outChan, state, stopActorSystemSignal}
 	
-	// Load generic commands like buildActorState, passivateActor, getState, pushStateOnChannel
+	// Load generic commands like buildState, passivateActor, getState, pushStateOnChannel
 	
 	// Start Actor command processor
 	closeActorSelfGoRoutines := make(chan struct{})
-	createExternalCommandRoutine(&actor, closeActorSelfGoRoutines)
+	actor.createExternalCommandRoutine(closeActorSelfGoRoutines)
 	
 	
 	// Start actor self commands
-	createSelfCommandRoutines(timedCommands, actor.InChan, closeActorSelfGoRoutines)
+	actor.createSelfCommandRoutines(closeActorSelfGoRoutines)
 	
 	return &actor
 }
 
-func createExternalCommandRoutine(actorRef *Actor, closeActorSelfGoRoutines chan struct{}) {
+func (actorRef *Actor) createExternalCommandRoutine(closeActorSelfGoRoutines chan struct{}) {
 	go func(actor *Actor) {
 		for {
 			select {
-				case actorCommand, open := <-actor.InChan:
+				case Command, open := <-actor.InChan:
 				if !open {
 					close(actor.InChan)
 					close(actor.OutChan)
 					return
 				}
 				
-				processor := actor.processor.CommandProcessor[actorCommand.Name]
-				response := processor(actorCommand, actor.State)
+				processor := actor.processor.CommandProcessor[Command.Name]
+				response := processor(Command, actor.State)
 				actor.OutChan <- response
 				
 				// Close all the self go routines if this was a passivate command
-				if actorCommand.Name == "passivateActor" {
+				if Command.Name == "passivateActor" {
 					close(closeActorSelfGoRoutines)
 					return
 				}
@@ -88,10 +88,10 @@ func createExternalCommandRoutine(actorRef *Actor, closeActorSelfGoRoutines chan
 	}(actorRef)
 }
 
-func createSelfCommandRoutines(timedCommands map[string]ActorCommand, actorInChan chan ActorCommand, closeActorSelfGoRoutines chan struct{}) {
-	if timedCommands != nil && len(timedCommands) > 0 {
-		for name, command := range timedCommands {
-			go func(name string, command ActorCommand, actorInChan chan ActorCommand, closeActorSelfGoRoutines chan struct{}) {
+func (actorRef *Actor) createSelfCommandRoutines(closeActorSelfGoRoutines chan struct{}) {
+	if actorRef.processor.TimedCommands != nil && len(actorRef.processor.TimedCommands) > 0 {
+		for name, command := range actorRef.processor.TimedCommands {
+			go func(name string, command Command, actorInChan chan Command, closeActorSelfGoRoutines chan struct{}) {
 				
 				timerResetFunc := func(scheduledOn time.Time) *time.Timer{
 					triggerDelay := scheduledOn.Sub(time.Now())
@@ -123,7 +123,7 @@ func createSelfCommandRoutines(timedCommands map[string]ActorCommand, actorInCha
 						}
 					}
 				}
-			}(name, command, actorInChan, closeActorSelfGoRoutines)
+			}(name, command, actorRef.InChan, closeActorSelfGoRoutines)
 		}
 	}
 }
