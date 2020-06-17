@@ -36,7 +36,7 @@ type Actor struct {
 	stopActorSystemSignal chan struct{} 
 }
 
-func New(name string, address string, commandProcessors map[string]func(Command, State) Response, timedCommands map[string]Command, stopActorSystemSignal chan struct{}) *Actor {
+func NewActor(name string, address string, commandProcessors map[string]func(Command, State) Response, timedCommands map[string]Command, stopActorSystemSignal chan struct{}) *Actor {
 	inChan := make(chan Command)
 	outChan := make(chan Response)
 	state := State{make(map[string]interface{})}
