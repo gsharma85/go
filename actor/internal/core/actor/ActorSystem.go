@@ -1,8 +1,8 @@
 package actor
 
 import (
-	"github.com/gsharma85/go/actor/internal/data/configs"
-	"github.com/gsharma85/go/actor/internal/data/events"
+	"github.com/gsharma85/go/actor/internal/data/config"
+	"github.com/gsharma85/go/actor/internal/data/event"
 	"github.com/gsharma85/go/actor/internal/utils"
 	"log"
 )
@@ -22,7 +22,7 @@ func NewActorSystem(configFile string, logfile string) chan Command {
     actorSystemConfig := parse(configFile)
     actors := make(map[string]*Actor)
     
-    for _, actorConfig := range actorSystemConfig.ActorConfigs {
+    for _, actorConfig := range actorSystemConfig.ActorConfig {
 	    actor := NewActor()
     }
     
@@ -43,7 +43,7 @@ func NewActorSystem(configFile string, logfile string) chan Command {
 	
 }
 
-func parse(filePath string) ActorSystemConfig {
+func parse(filePath string) config.ActorSystemConfig {
 	
 }
 
@@ -56,7 +56,7 @@ func getCommandHandlerMap() map[string]func(Command, State) Response {
 	return commandMap
 }
 
-func getTimedCommands(actorConfig ActorConfig) map[string]Command {
+func getTimedCommands(actorConfig config.ActorConfig) map[string]Command {
 	timedcommandMap := make(map[string]Command)
 	commandTime := time.Now()
 	checkFileArrivalCommand := Command{"HandleCheckFileArrival", commandTime}
@@ -66,7 +66,7 @@ func getTimedCommands(actorConfig ActorConfig) map[string]Command {
 
 
 func handleCreateUpdateFileCommand(command Command, state State) Response {
-	fileEvent := command.Payload.(events.FileEvent)
+	fileEvent := command.Payload.(event.FileEvent)
 	state.Data["MostRecentEvent"] = fileEvent
 	count, ok := state.Data["FileCreateOrUpdateCount"]
 	
@@ -93,7 +93,7 @@ func handleCreateUpdateFileCommand(command Command, state State) Response {
 }
 
 func handleCheckFileArrivalCommand(command Command, state State) Response {
-	fileEvent := command.Payload.(events.FileEvent)
+	fileEvent := command.Payload.(event.FileEvent)
 	state.Data["MostRecentEvent"] = fileEvent
 	
 	alerts, ok := state.Data["Alerts"]
