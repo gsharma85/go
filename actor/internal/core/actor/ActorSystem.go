@@ -5,6 +5,7 @@ import (
 	"github.com/gsharma85/go/actor/internal/data/event"
 	"github.com/gsharma85/go/actor/internal/utils"
 	"log"
+	"time"
 )
 
 type ActorSystem struct {
@@ -13,7 +14,7 @@ type ActorSystem struct {
 	Actors map[string]*Actor
 }
 
-var logger log.*Logger
+var logger *log.Logger
 
 func NewActorSystem(configFile string, logfile string) chan Command {
 
@@ -22,8 +23,8 @@ func NewActorSystem(configFile string, logfile string) chan Command {
     actorSystemConfig := parse(configFile)
     actors := make(map[string]*Actor)
     
-    for _, actorConfig := range actorSystemConfig.ActorConfig {
-	    actor := NewActor()
+    for _, actorConfig := range actorSystemConfig.ActorConfigs {
+//	    actor := NewActor()
     }
     
     
@@ -44,7 +45,7 @@ func NewActorSystem(configFile string, logfile string) chan Command {
 }
 
 func parse(filePath string) config.ActorSystemConfig {
-	
+	return config.ActorSystemConfig{}
 }
 
 func getCommandHandlerMap() map[string]func(Command, State) Response {
@@ -59,7 +60,7 @@ func getCommandHandlerMap() map[string]func(Command, State) Response {
 func getTimedCommands(actorConfig config.ActorConfig) map[string]Command {
 	timedcommandMap := make(map[string]Command)
 	commandTime := time.Now()
-	checkFileArrivalCommand := Command{"HandleCheckFileArrival", commandTime}
+	checkFileArrivalCommand := Command{"HandleCheckFileArrival", commandTime, nil}
 	timedcommandMap["HandleCheckFileArrival"] = checkFileArrivalCommand
 	return timedcommandMap
 }

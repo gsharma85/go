@@ -13,6 +13,6 @@ type ActorConfig struct {
 type ActorSystemConfig struct {
 	Name string
 	Address string
-	ActorConfigs []ActorConfigs
+	ActorConfigs []ActorConfig
 	EventNames []string
 }

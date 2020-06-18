@@ -6,7 +6,7 @@ import (
 )
 
 type State struct {
-	data map[string]interface{}
+	Data map[string]interface{}
 }
 
 
