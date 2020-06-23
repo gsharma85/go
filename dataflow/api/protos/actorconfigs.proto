@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+option go_package = "github.com/gsharma85/go/dataflow/pkg/data";
+
+import "events.proto";
+
+message ActorConfig {
+	string name = 1;
+	string address = 2;
+	string completeBy = 3;
+}
+
+message ActorSystemConfig {
+	string name = 1;
+	string address = 2;
+	repeated ActorConfig actorConfigs = 3;
+}
+
+message FileActorSystemEventConfig {
+    string actorSystemName = 1;
+	FileEvent fileEvent = 2;
+}

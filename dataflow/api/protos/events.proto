@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+option go_package = "github.com/gsharma85/go/dataflow/pkg/data";
+
+message AckEvent {
+	int32 ack = 1;
+}
+
+message FileEvent {
+	string eventName = 1;
+	string actorSystemPath = 2;
+	string actorPath = 3;
+	string action = 4;
+	string time = 5;
+}

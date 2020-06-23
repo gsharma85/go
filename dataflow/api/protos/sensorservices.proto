@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+option go_package = "github.com/gsharma85/go/dataflow/pkg/grpc";
+
+import "events.proto";
+
+service FileSensorService {
+	rpc sendFileEvent(stream FileEvent) returns (AckEvent);
+}
