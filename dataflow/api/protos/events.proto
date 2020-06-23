@@ -7,7 +7,7 @@ message AckEvent {
 }
 
 message FileEvent {
-	string eventName = 1;
+	string name = 1;
 	string actorSystemPath = 2;
 	string actorPath = 3;
 	string action = 4;
