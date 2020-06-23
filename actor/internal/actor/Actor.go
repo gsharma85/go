@@ -17,6 +17,7 @@ type Processor struct {
 
 type Command struct {
 	Name string
+	ActorAddress string
 	CommandTime time.Time
 	Payload interface{}
 }
@@ -34,14 +35,15 @@ type Actor struct {
 	OutChan chan Response
 	State State
 	stopActorSystemSignal chan struct{} 
+	logger *log.Logger
 }
 
-func NewActor(name string, address string, commandProcessors map[string]func(Command, State) Response, timedCommands map[string]Command, stopActorSystemSignal chan struct{}) *Actor {
+func NewActor(name string, address string, commandProcessors map[string]func(Command, State) Response, timedCommands map[string]Command, stopActorSystemSignal chan struct{}, logger *log.Logger) *Actor {
 	inChan := make(chan Command)
 	outChan := make(chan Response)
 	state := State{make(map[string]interface{})}
 	processor := Processor{commandProcessors, timedCommands}
-	actor := Actor{name, address, processor, inChan, outChan, state, stopActorSystemSignal}
+	actor := Actor{name, address, processor, inChan, outChan, state, stopActorSystemSignal, logger}
 	
 	// Load generic commands like buildState, passivateActor, getState, pushStateOnChannel
 	
@@ -66,6 +68,8 @@ func (actorRef *Actor) createExternalCommandRoutine(closeActorSelfGoRoutines cha
 					close(actor.OutChan)
 					return
 				}
+				
+				log.Printf("Got command %s", Command.Name)
 				
 				processor := actor.processor.CommandProcessor[Command.Name]
 				response := processor(Command, actor.State)
@@ -93,6 +97,8 @@ func (actorRef *Actor) createSelfCommandRoutines(closeActorSelfGoRoutines chan s
 		for name, command := range actorRef.processor.TimedCommands {
 			go func(name string, command Command, actorInChan chan Command, closeActorSelfGoRoutines chan struct{}) {
 				
+				currentTime := time.Now()
+				scheduledOn := time.Date(currentTime.Year(), currentTime.Month(), currentTime.Day(), command.CommandTime.Hour(), command.CommandTime.Minute(), command.CommandTime.Second(), command.CommandTime.Nanosecond(), currentTime.Location())
 				timerResetFunc := func(scheduledOn time.Time) *time.Timer{
 					triggerDelay := scheduledOn.Sub(time.Now())
 					
@@ -103,17 +109,17 @@ func (actorRef *Actor) createSelfCommandRoutines(closeActorSelfGoRoutines chan s
 						nextTriggerOn = time.Until(scheduledOn)
 					}
 					
-					log.Println("Next timer for command: %s will be in %s", name, nextTriggerOn)
+					log.Printf("Next timer for command: %s will be in %s", name, nextTriggerOn)
 					
 					return time.NewTimer(nextTriggerOn)
 				}
 			
-				timer := timerResetFunc(command.CommandTime)
+				timer := timerResetFunc(scheduledOn)
 			
 				for {
 					select {
 						case tickTime,_ := <- timer.C:
-						log.Println("Self command executed at %s", tickTime)
+						log.Printf("Self command executed at %s", tickTime)
 						actorInChan <- command
 						timer = timerResetFunc(time.Now().Add(time.Hour * 24))
 						
