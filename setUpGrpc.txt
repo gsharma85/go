@@ -5,3 +5,9 @@ download protoc
 protoc -I C:\gaurav\research\go\sensor\api\grpc\ C:\gaurav\research\go\sensor\api\grpc\sensorconfig.proto --go_out=plugins=grpc:C:\gaurav\research\go\sensor\internal\grpc\config\
 
 protoc -I C:\gaurav\research\go\sensor\api\grpc\ C:\gaurav\research\go\sensor\api\grpc\sensordata.proto --go_out=plugins=grpc:C:\gaurav\research\go\sensor\internal\grpc\sensor\
+
+
+protoc --proto_path=C:\github.com\gsharma85\go\dataflow\api\protos\ C:\github.com\gsharma85\go\dataflow\api\protos\events.proto --go_out=plugins=grpc:C:\
+protoc --proto_path=C:\github.com\gsharma85\go\dataflow\api\protos\ C:\github.com\gsharma85\go\dataflow\api\protos\actorconfigs.proto --go_out=plugins=grpc:C:\
+protoc --proto_path=C:\github.com\gsharma85\go\dataflow\api\protos\ C:\github.com\gsharma85\go\dataflow\api\protos\sensorservices.proto --go_out=plugins=grpc:C:\
+

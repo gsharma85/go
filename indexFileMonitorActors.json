@@ -1,0 +1,16 @@
+{
+	"name": "File Monitoring Actor System",
+	"address": "/index",
+	"actorConfigs": [
+		{
+			"name": "File",
+			"address": "/index/indexfile1.txt",
+			"completeBy": "06:44PM"
+		},
+		{
+			"name": "File",
+			"address": "/index/indexfile2.txt",
+			"completeBy": "06:43PM"
+		}
+	]
+}
