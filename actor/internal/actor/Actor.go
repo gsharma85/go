@@ -17,7 +17,7 @@ type Processor struct {
 
 type Command struct {
 	Name string
-	ActorAddress string
+	ActorPath string
 	CommandTime time.Time
 	Payload interface{}
 }

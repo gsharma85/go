@@ -63,8 +63,11 @@ func createActorSystemCommandChannel(actors map[string]*Actor) chan Command {
 		go func() {
 			for {
 				command := <-commandChan
-				actor := actors[command.ActorAddress]
-				actor.InChan <- command
+				actor := actors[command.ActorPath]
+				
+				if actor != nil {
+					actor.InChan <- command
+				}
 			}
 		}()
 	}

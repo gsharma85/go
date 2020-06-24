@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/gsharma85/go/actor/internal/actor"
+	"github.com/gsharma85/go/actor/internal/receptor"
 )
 
 func main() {
@@ -13,7 +14,8 @@ func main() {
 	
 	stopChan := make(chan struct{})
 	
-	actor.NewFileActorSystem(*configFile, *logfile)
+	commandInChan := actor.NewFileActorSystem(*configFile, *logfile)
+	receptor.StartFileEventReceptor(commandInChan)
 	
 	<- stopChan
 }

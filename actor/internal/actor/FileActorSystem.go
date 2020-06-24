@@ -16,8 +16,7 @@ func NewFileActorSystem(configFile string, logfile string) chan Command {
 
 func getCommandHandlerMap() map[string]func(Command, State) Response {
 	commandMap := make(map[string]func(Command, State) Response)
-	commandMap["HandleCreateFileEvent"] = handleCreateUpdateFileCommand
-	commandMap["HandleUpdateFileEvent"] = handleCreateUpdateFileCommand
+	commandMap["HandleCreateOrUpdateFileEvent"] = handleCreateUpdateFileCommand
 	commandMap["HandleCheckFileArrival"] = handleCheckFileArrivalCommand
 	
 	return commandMap
@@ -38,7 +37,7 @@ func getTimedCommands(actorConfig *data.ActorConfig) map[string]Command {
 
 
 func handleCreateUpdateFileCommand(command Command, state State) Response {
-	fileEvent := command.Payload.(data.FileEvent)
+	fileEvent := command.Payload.(*data.FileEvent)
 	state.Data["MostRecentEvent"] = fileEvent
 	value, ok := state.Data["FileCreateOrUpdateCount"]
 	
@@ -89,8 +88,8 @@ func handleCheckFileArrivalCommand(command Command, state State) Response {
 	
 	if !ok || count == 0 {
 		alerts = append(alerts, "File not received by configured time.")
-		log.Printf("Alert on file %s - %s", command.ActorAddress, "File not received by configured time.")
-		logger.Printf("Alert on file %s - %s", command.ActorAddress, "File not received by configured time.")		
+		log.Printf("Alert on file %s - %s", command.ActorPath, "File not received by configured time.")
+		logger.Printf("Alert on file %s - %s", command.ActorPath, "File not received by configured time.")		
 	}
 	
 	state.Data["Alerts"] = alerts
