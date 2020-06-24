@@ -1,15 +1,15 @@
 {
 	"name": "File Monitoring Actor System",
-	"address": "/index",
+	"address": "C:/gotest",
 	"actorConfigs": [
 		{
 			"name": "File",
-			"address": "/index/indexfile1.txt",
+			"address": "C:/gotest/indexfile1.txt",
 			"completeBy": "06:44PM"
 		},
 		{
 			"name": "File",
-			"address": "/index/indexfile2.txt",
+			"address": "C:/gotest/indexfile2.txt",
 			"completeBy": "06:43PM"
 		}
 	]
