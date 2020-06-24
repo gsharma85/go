@@ -27,6 +27,7 @@ type SensorPipeline struct {
 }
 
 func StartSensorPipeline(watcherName string, transformerNames []string, depositorName string, senseConfig SenseConfig) {
+	
 	watcher := getWatcher(watcherName, senseConfig)
 	inChan := watcher.Watch()
 	
@@ -63,7 +64,13 @@ func getDepositor(name string, senseConfig SenseConfig) Depositor {
 		if !ok {
 			log.Fatal("Exiting application due to errors while creating File logger.")
 		}
-		return logger	
+		return logger
+	case "grpcactorsystem": 
+		logger, ok := CreateGrpcToActorSystemDepositor(senseConfig)
+		if !ok {
+			log.Fatal("Exiting application due to errors while creating File logger.")
+		}
+		return logger		
 	}
 	return nil
 }

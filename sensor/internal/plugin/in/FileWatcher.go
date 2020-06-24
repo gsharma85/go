@@ -57,7 +57,12 @@ func CreateFileWatcher(senseConfig SenseConfig) (FileWatcher,bool) {
 	
 	outChan := make(chan SenseEvent)
 	fw := FileWatcher{watcher, outChan, senseConfig.StopSignal}
-	fw.Watcher.Add(senseConfig.DirName)
+	
+	if senseConfig.ActorSystemConfigData != nil {
+		fw.Watcher.Add(senseConfig.ActorSystemConfigData.Address)
+	} else {
+		fw.Watcher.Add(senseConfig.DirName)
+	}
 	
 	return fw, true
 }
