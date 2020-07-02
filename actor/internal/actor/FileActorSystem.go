@@ -2,16 +2,16 @@ package actor
 
 import (
 	"github.com/gsharma85/go/dataflow/pkg/data"
+	"github.com/gsharma85/go/actor/internal/eventlistener/grpc"
 	"log"
 	"time"
 )
 
-var logger *log.Logger
 var actors map[string]*Actor
 
-func NewFileActorSystem(configFile string, logfile string) chan Command {
-
-	return NewActorSystem(configFile, logfile, getCommandHandlerMap, getTimedCommands)
+func NewFileActorSystem(configFile string, logfile string) {
+	commandInChan := NewActorSystem(configFile, logfile, getCommandHandlerMap, getTimedCommands)
+	startFileEventReceptor(commandInChan)
 }
 
 func getCommandHandlerMap() map[string]func(Command, State) Response {
@@ -27,6 +27,7 @@ func getTimedCommands(actorConfig *data.ActorConfig) map[string]Command {
 	commandTime, err := time.Parse(time.Kitchen, actorConfig.CompleteBy)
 	
 	if err != nil {
+		logger.Printf("Error while parsing complete by time from config: %s", err)
 		log.Fatal("Error while parsing complete by time from config: %s", err)
 	}
 	
@@ -61,7 +62,7 @@ func handleCreateUpdateFileCommand(command Command, state State) Response {
 	
 	if count > 1 {
 		alerts = append(alerts, "File create/updated more than once")
-		logger.Println("Alert on file %s - %s", fileEvent.Name, "File create/updated more than once")
+		logger.Printf("Alert on file %s - %s", fileEvent.Name, "File create/updated more than once")
 	}
 	
 	state.Data["Alerts"] = alerts
@@ -96,4 +97,18 @@ func handleCheckFileArrivalCommand(command Command, state State) Response {
 	
 	response := Response{command.Name, "Processed"}
 	return response
+}
+
+func startFileEventReceptor(commandInChan chan Command) {
+	fileEventInChan := grpc.StartListener()
+	
+	go func() {
+		for {
+			fileEvent := <- fileEventInChan
+			log.Printf("Got file event: %s", fileEvent)
+			command := Command{fileEvent.Name, fileEvent.ActorPath, time.Now(), fileEvent}
+			commandInChan <- command
+		}
+	}()
+	
 }

@@ -69,7 +69,8 @@ func (actorRef *Actor) createExternalCommandRoutine(closeActorSelfGoRoutines cha
 					return
 				}
 				
-				log.Printf("Got command %s", Command.Name)
+				log.Printf("Got command %s for actor %s", Command.Name, actorRef.Address)
+				logger.Printf("Got command %s for actor %s", Command.Name, actorRef.Address)
 				
 				processor := actor.processor.CommandProcessor[Command.Name]
 				response := processor(Command, actor.State)
@@ -109,17 +110,26 @@ func (actorRef *Actor) createSelfCommandRoutines(closeActorSelfGoRoutines chan s
 						nextTriggerOn = time.Until(scheduledOn)
 					}
 					
-					log.Printf("Next timer for command: %s will be in %s", name, nextTriggerOn)
+					log.Printf("Next timer for command: %s for actor %s will be in %s", name, actorRef.Address, nextTriggerOn)
+					logger.Printf("Next timer for command: %s for actor %s will be in %s", name, actorRef.Address, nextTriggerOn)
 					
 					return time.NewTimer(nextTriggerOn)
 				}
 			
 				timer := timerResetFunc(scheduledOn)
-			
+				// Run if time already passed
+				triggerDelay := scheduledOn.Sub(time.Now())
+				if triggerDelay <= 0 {
+					log.Printf("Set up time in past. Running self command %s for actor %s.", name, actorRef.Address)
+					logger.Printf("Set up time in past. Running self command %s for actor %s.", name, actorRef.Address)
+					actorInChan <- command
+				}
+				
 				for {
 					select {
 						case tickTime,_ := <- timer.C:
-						log.Printf("Self command executed at %s", tickTime)
+						log.Printf("Running self command %s for actor %s at time %s.", name, actorRef.Address, tickTime)
+						logger.Printf("Running self command %s for actor %s at time %s", name, actorRef.Address, tickTime)
 						actorInChan <- command
 						timer = timerResetFunc(time.Now().Add(time.Hour * 24))
 						

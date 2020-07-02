@@ -6,7 +6,7 @@ import (
 )
 
 var logger *log.Logger
-func CreateFileLogger(fileName string) *log.Logger {
+func Logger(fileName string) *log.Logger {
 	
 	if logger == nil {
 		logFile, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)

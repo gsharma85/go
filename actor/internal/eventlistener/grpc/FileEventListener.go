@@ -41,6 +41,7 @@ func StartListener() chan *data.FileEvent {
 	go func() {
 		log.Printf("Starting listener for grpc events.")
 		grpcServer.Serve(lis)
+		log.Printf("Started listener for grpc events.")
 	}()
 	
 	return eventInChan

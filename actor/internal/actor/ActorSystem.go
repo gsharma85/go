@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"github.com/gsharma85/go/dataflow/pkg/data"
 	"github.com/gsharma85/go/actor/internal/utils"
+	"log"
 )
+
+var logger *log.Logger
 
 type ActorSystem struct {
 	Name string
@@ -15,7 +18,7 @@ type ActorSystem struct {
 
 func NewActorSystem(configFile string, logfile string, generateCommandHandlers func() map[string]func(Command, State) Response, generateTimeCommands func(actorConfig *data.ActorConfig) map[string]Command) chan Command {
 
-	logger = utils.CreateFileLogger(logfile)
+	logger = utils.Logger(logfile)
 	stopAllActorsSignal := make(chan struct{})
 	
 	actorSystemConfig := parseActorConfig(configFile)
