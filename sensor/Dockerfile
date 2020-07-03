@@ -1,6 +1,10 @@
 FROM golang:1.14
 
 # Set up github ssh keys
+RUN mkdir /root/sensor
+WORKDIR /root/sensor
+COPY actorsystem.json .
+
 RUN mkdir /root/.ssh
 WORKDIR /root/.ssh
 COPY id_rsa .
@@ -24,4 +28,4 @@ WORKDIR /
 RUN /root/.ssh/go-get.sh /root/.ssh/id_rsa /root/.ssh/passfile
 
 
-CMD ["/go/bin/sensor", "-d" , "/root/gotest", "-lf", "/root/sensor.log"]
+CMD ["/go/bin/sensor", "-cf" , "/root/sensor/actorsystem.json", "-lf", "/root/sensor/sensor.log"]

@@ -5,6 +5,8 @@ import (
 	"google.golang.org/grpc"
 	"context"
 	"time"
+	"os"
+	"fmt"
 	"strings"
 	grpcservice "github.com/gsharma85/go/dataflow/pkg/grpc"
 	"github.com/gsharma85/go/dataflow/pkg/data"
@@ -48,9 +50,10 @@ func (grpcOut GrpcOutToActorSystem) Deposit(inChan chan sensedata.SenseEvent) {
 }
 
 func CreateGrpcToActorSystemDepositor(senseConfig sensedata.SenseConfig) (GrpcOutToActorSystem,bool) {
-	log.Printf("Dialing grpc connection to Actor System.")
 	
-	conn, dialErr := grpc.Dial("127.0.0.1:7773", grpc.WithInsecure())
+	log.Printf("Dialing grpc connection to Actor System %s", fmt.Sprintf("%s:%s",os.Getenv("ACTOR_SERVICE_HOST"),os.Getenv("ACTOR_SERVICE_PORT")))
+	
+	conn, dialErr := grpc.Dial(fmt.Sprintf("%s:%s",os.Getenv("ACTOR_SERVICE_HOST"),os.Getenv("ACTOR_SERVICE_PORT")), grpc.WithInsecure())
 	
 	if dialErr != nil {
 		log.Fatal("Unable to make grpc connection to Actor System: %s", dialErr)

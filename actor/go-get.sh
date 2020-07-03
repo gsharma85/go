@@ -15,5 +15,5 @@ expect << EOF
   expect eof
 EOF
 
-go get -u github.com/gsharma85/go/sensor/cmd/sensor
+go get -u github.com/gsharma85/go/actor/cmd/actor
 
