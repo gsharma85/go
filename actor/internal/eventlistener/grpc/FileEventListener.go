@@ -6,6 +6,8 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	"net"
+	"os"
+	"fmt"
 )
 
 type fileEventInEndPoint struct {
@@ -31,7 +33,12 @@ func StartListener() chan *data.FileEvent {
 	
 	grpcservice.RegisterFileMonitoringActorSystemServiceServer(grpcServer, &grpcInEndpoint)
 	
-	lis, err := net.Listen("tcp","127.0.0.1:7773")
+	host,_ := os.Hostname()
+	
+	hostPort := fmt.Sprintf("%s:%d", getIpAddress(host),3000)
+	
+	log.Printf("Starting grpc listener on %s", hostPort)
+	lis, err := net.Listen("tcp", hostPort)
 	
 	if err != nil {
 		log.Fatal("Problem creating grpc listener:", err)
@@ -46,3 +53,13 @@ func StartListener() chan *data.FileEvent {
 	
 	return eventInChan
 }
+
+func getIpAddress(host string) string {
+	addrs, _ := net.LookupIP(host)
+	for _, addr := range addrs {
+	    if ipv4 := addr.To4(); ipv4 != nil {
+	        return ipv4.String()
+	    }      
+	}
+	return ""
+}	
