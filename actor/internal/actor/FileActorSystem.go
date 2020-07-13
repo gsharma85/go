@@ -50,6 +50,7 @@ func handleCreateUpdateFileCommand(command Command, state State) Response {
 	}
 	
 	count = count + 1;
+	state.Data["FileCreateOrUpdateCount"] = count
 	
 	value, ok = state.Data["Alerts"]
 	

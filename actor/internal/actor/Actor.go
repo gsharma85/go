@@ -74,7 +74,9 @@ func (actorRef *Actor) createExternalCommandRoutine(closeActorSelfGoRoutines cha
 				
 				processor := actor.processor.CommandProcessor[Command.Name]
 				response := processor(Command, actor.State)
-				actor.OutChan <- response
+				log.Printf("Response after running command: %s", response)
+				
+//				actor.OutChan <- response
 				
 				// Close all the self go routines if this was a passivate command
 				if Command.Name == "passivateActor" {
@@ -105,7 +107,7 @@ func (actorRef *Actor) createSelfCommandRoutines(closeActorSelfGoRoutines chan s
 					
 					var nextTriggerOn time.Duration
 					if triggerDelay <= 0 {
-						nextTriggerOn = time.Until(scheduledOn.Add(time.Hour * 24))
+						nextTriggerOn = time.Minute * 1
 					} else {
 						nextTriggerOn = time.Until(scheduledOn)
 					}
@@ -131,7 +133,7 @@ func (actorRef *Actor) createSelfCommandRoutines(closeActorSelfGoRoutines chan s
 						log.Printf("Running self command %s for actor %s at time %s.", name, actorRef.Address, tickTime)
 						logger.Printf("Running self command %s for actor %s at time %s", name, actorRef.Address, tickTime)
 						actorInChan <- command
-						timer = timerResetFunc(time.Now().Add(time.Hour * 24))
+						timer = timerResetFunc(time.Now().Add(time.Minute * 1))
 						
 						case _, open := <- closeActorSelfGoRoutines:
 						if !open {
