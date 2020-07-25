@@ -107,7 +107,7 @@ func (actorRef *Actor) createSelfCommandRoutines(closeActorSelfGoRoutines chan s
 					
 					var nextTriggerOn time.Duration
 					if triggerDelay <= 0 {
-						nextTriggerOn = time.Minute * 1
+						nextTriggerOn = time.Minute * 15
 					} else {
 						nextTriggerOn = time.Until(scheduledOn)
 					}

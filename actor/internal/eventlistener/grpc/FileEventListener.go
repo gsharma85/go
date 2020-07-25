@@ -35,7 +35,7 @@ func StartListener() chan *data.FileEvent {
 	
 	host,_ := os.Hostname()
 	
-	hostPort := fmt.Sprintf("%s:%d", getIpAddress(host),3000)
+	hostPort := fmt.Sprintf("%s:%s", getIpAddress(host),os.Getenv("ACTOR_GRPC_LISTENER_PORT"))
 	
 	log.Printf("Starting grpc listener on %s", hostPort)
 	lis, err := net.Listen("tcp", hostPort)
