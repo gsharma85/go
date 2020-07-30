@@ -57,7 +57,7 @@ func GetFileActorStatus() []string{
 				value, ok := actor.State.Data["status"]
 				if ok {
 					complete := value.(bool)
-					status = append(status, fmt.Sprintf("%s: has status %v", actor.Address, complete))		
+					status = append(status, fmt.Sprintf("%s: has status %v/n", actor.Address, complete))		
 				}
 				childActors = append(childActors, actor.Childs...)
 			}	

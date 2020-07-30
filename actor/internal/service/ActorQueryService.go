@@ -50,7 +50,7 @@ type QueryActorRequest struct {
 }
 
 type QueryActorResponse struct {
-	Alerts []string "json:alerts"
+	Response []string "json:response"
 }
 
 func makeQueryAlertsEndpoint(service QueryActorAlertsService) endpoint.Endpoint {
@@ -64,8 +64,8 @@ func makeQueryAlertsEndpoint(service QueryActorAlertsService) endpoint.Endpoint 
 func makeQueryStatusEndpoint(service QueryActorStatusService) endpoint.Endpoint {
 	return func(_ context.Context, request interface{}) (interface{}, error) {
 		queryActorRequest := request.(QueryActorRequest)
-		alerts := service.Execute(queryActorRequest.ActorSystemType)
-		return QueryActorResponse{alerts}, nil
+		status := service.Execute(queryActorRequest.ActorSystemType)
+		return QueryActorResponse{status}, nil
 	}
 }
 
