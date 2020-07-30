@@ -3,6 +3,7 @@ package grpc
 import (
 	"github.com/gsharma85/go/dataflow/pkg/data"
 	grpcservice "github.com/gsharma85/go/dataflow/pkg/grpc"
+	"github.com/gsharma85/go/actor/internal/utils"
 	"google.golang.org/grpc"
 	"log"
 	"net"
@@ -35,7 +36,7 @@ func StartListener() chan *data.FileEvent {
 	
 	host,_ := os.Hostname()
 	
-	hostPort := fmt.Sprintf("%s:%s", getIpAddress(host),os.Getenv("ACTOR_GRPC_LISTENER_PORT"))
+	hostPort := fmt.Sprintf("%s:%s", utils.GetIpAddress(host),os.Getenv("ACTOR_GRPC_LISTENER_PORT"))
 	
 	log.Printf("Starting grpc listener on %s", hostPort)
 	lis, err := net.Listen("tcp", hostPort)
@@ -53,13 +54,4 @@ func StartListener() chan *data.FileEvent {
 	
 	return eventInChan
 }
-
-func getIpAddress(host string) string {
-	addrs, _ := net.LookupIP(host)
-	for _, addr := range addrs {
-	    if ipv4 := addr.To4(); ipv4 != nil {
-	        return ipv4.String()
-	    }      
-	}
-	return ""
-}	
+	

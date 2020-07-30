@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/gsharma85/go/actor/internal/actor"
+	"github.com/gsharma85/go/actor/internal/service"
 )
 
 func main() {
@@ -14,6 +15,8 @@ func main() {
 	stopChan := make(chan struct{})
 	
 	actor.NewFileActorSystem(*configFile, *logfile)
+	
+	service.StartQueryActorServer()
 	
 	<- stopChan
 }

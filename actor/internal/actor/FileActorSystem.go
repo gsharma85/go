@@ -5,13 +5,70 @@ import (
 	"github.com/gsharma85/go/actor/internal/eventlistener/grpc"
 	"log"
 	"time"
+	"fmt"
 )
 
-var actors map[string]*Actor
+var actorSystem ActorSystem
 
 func NewFileActorSystem(configFile string, logfile string) {
-	commandInChan := NewActorSystem(configFile, logfile, getCommandHandlerMap, getTimedCommands)
-	startFileEventReceptor(commandInChan)
+	actorSystem = NewActorSystem(configFile, logfile, getCommandHandlerMap, getTimedCommands)
+	startFileEventReceptor(actorSystem.ExternalCommandChan)
+}
+
+func GetFileActorAlerts() []string{
+	alerts := make([]string,0)
+	rootActorPath := actorSystem.RootActorAddress
+	actorsToIterate := make([]string, 0)
+	actorsToIterate = append(actorsToIterate, rootActorPath)
+	for {
+		if len(actorsToIterate) != 0 {
+			childActors := make([]string, 0)
+			for _, actorAddress := range actorsToIterate {
+				actor, _ := actorSystem.Actors[actorAddress] 
+				value, ok := actor.State.Data["Alerts"]
+				if ok {
+					alertStrs := value.([]string)
+					for _, alert := range alertStrs {
+						alerts = append(alerts, fmt.Sprintf("%s: %s", actor.Address, alert))
+					}		
+				}
+				childActors = append(childActors, actor.Childs...)
+			}	
+			actorsToIterate = nil
+			actorsToIterate = make([]string, 0)
+			actorsToIterate = append(actorsToIterate, childActors...)
+		} else {
+			break
+		}
+	}	
+	return alerts
+}
+
+func GetFileActorStatus() []string{
+	status := make([]string,0)
+	rootActorPath := actorSystem.RootActorAddress
+	actorsToIterate := make([]string, 0)
+	actorsToIterate = append(actorsToIterate, rootActorPath)
+	for {
+		if len(actorsToIterate) != 0 {
+			childActors := make([]string, 0)
+			for _, actorAddress := range actorsToIterate {
+				actor, _ := actorSystem.Actors[actorAddress] 
+				value, ok := actor.State.Data["status"]
+				if ok {
+					complete := value.(bool)
+					status = append(status, fmt.Sprintf("%s: has status %v", actor.Address, complete))		
+				}
+				childActors = append(childActors, actor.Childs...)
+			}	
+			actorsToIterate = nil
+			actorsToIterate = make([]string, 0)
+			actorsToIterate = append(actorsToIterate, childActors...)
+		} else {
+			break
+		}
+	}	
+	return status
 }
 
 func getCommandHandlerMap() map[string]func(Command, State) Response {
@@ -67,6 +124,7 @@ func handleCreateUpdateFileCommand(command Command, state State) Response {
 	}
 	
 	state.Data["Alerts"] = alerts
+	state.Data["complete"] = true
 	
 	response := Response{command.Name, "Processed"}
 	return response

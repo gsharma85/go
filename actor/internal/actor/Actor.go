@@ -29,23 +29,53 @@ type Response struct {
 
 type Actor struct {
 	Name string
+	Type string
 	Address string
+	Childs []string
+	State State
 	processor Processor
 	InChan chan Command
-	OutChan chan Response
-	State State
+	SystemChan chan Command
 	stopActorSystemSignal chan struct{} 
 	logger *log.Logger
 }
 
-func NewActor(name string, address string, commandProcessors map[string]func(Command, State) Response, timedCommands map[string]Command, stopActorSystemSignal chan struct{}, logger *log.Logger) *Actor {
+type ActorBuilder struct {
+	Name string
+	Type string
+	Address string
+	Childs []string
+	TimedCommands map[string]Command
+}
+
+func NewActorBuilder(name string, address string, timedCommands map[string]Command) ActorBuilder {
+	actorBuilder := ActorBuilder{}
+	actorBuilder.Name = name
+	actorBuilder.Address = address
+	actorBuilder.Childs = make([]string, 0)
+	actorBuilder.TimedCommands = timedCommands
+	return actorBuilder
+}
+
+func(ab *ActorBuilder) Build(commandProcessors map[string]func(Command, State) Response, systemChan chan Command, stopActorSystemSignal chan struct{}, logger *log.Logger) *Actor {
 	inChan := make(chan Command)
-	outChan := make(chan Response)
 	state := State{make(map[string]interface{})}
-	processor := Processor{commandProcessors, timedCommands}
-	actor := Actor{name, address, processor, inChan, outChan, state, stopActorSystemSignal, logger}
+	processor := Processor{commandProcessors, ab.TimedCommands}
+	actor := Actor{ab.Name, ab.Type, ab.Address, ab.Childs, state, processor, inChan, systemChan, stopActorSystemSignal, logger}
+	
+	if len(actor.Childs) != 0 {
+		childStatus := make(map[string]bool)
+		for _, cAddress := range actor.Childs {
+			childStatus[cAddress] = false
+		}
+		actor.State.Data["childComplete"] = childStatus
+	}
+	
+	actor.State.Data["complete"] = false
+	actor.State.Data["status"] = false
 	
 	// Load generic commands like buildState, passivateActor, getState, pushStateOnChannel
+	processor.CommandProcessor["ChildCompleteEvent"] = childStateCompleteProcessor
 	
 	// Start Actor command processor
 	closeActorSelfGoRoutines := make(chan struct{})
@@ -58,28 +88,41 @@ func NewActor(name string, address string, commandProcessors map[string]func(Com
 	return &actor
 }
 
+func childStateCompleteProcessor(cmd Command, state State) Response {
+	childAddress := cmd.Payload.(string)
+	state.Data["childComplete"].(map[string]bool)[childAddress] = true
+	return Response{cmd.Name, "Processed"}
+}
+
 func (actorRef *Actor) createExternalCommandRoutine(closeActorSelfGoRoutines chan struct{}) {
 	go func(actor *Actor) {
 		for {
 			select {
-				case Command, open := <-actor.InChan:
+				case cmd, open := <-actor.InChan:
 				if !open {
 					close(actor.InChan)
-					close(actor.OutChan)
 					return
 				}
 				
-				log.Printf("Got command %s for actor %s", Command.Name, actorRef.Address)
-				logger.Printf("Got command %s for actor %s", Command.Name, actorRef.Address)
+				log.Printf("Got command %s for actor %s", cmd.Name, actor.Address)
+				logger.Printf("Got command %s for actor %s", cmd.Name, actor.Address)
 				
-				processor := actor.processor.CommandProcessor[Command.Name]
-				response := processor(Command, actor.State)
+				processor := actor.processor.CommandProcessor[cmd.Name]
+				response := processor(cmd, actor.State)
 				log.Printf("Response after running command: %s", response)
 				
-//				actor.OutChan <- response
+				
+				isComplete := actor.stateCheck()
+				
+				actor.State.Data["status"] = isComplete
+				
+				if isComplete {
+					log.Println("Sending child complete command for: %s", actor.Address)
+					actor.SystemChan <- Command{"ChildCompleteEvent", "parent", time.Now(), actor.Address}
+				}
 				
 				// Close all the self go routines if this was a passivate command
-				if Command.Name == "passivateActor" {
+				if cmd.Name == "passivateActor" {
 					close(closeActorSelfGoRoutines)
 					return
 				}
@@ -87,12 +130,27 @@ func (actorRef *Actor) createExternalCommandRoutine(closeActorSelfGoRoutines cha
 				case _, open := <- actor.stopActorSystemSignal:
 				if !open {
 					close(actor.InChan)
-					close(actor.OutChan)
 					return
 				}
 			}
 		}
 	}(actorRef)
+}
+
+func (actorRef *Actor) stateCheck() bool {
+	if len(actorRef.Childs) == 0 {
+		return actorRef.State.Data["complete"].(bool)
+	} else {
+		childComplete := actorRef.State.Data["childComplete"].(map[string]bool)
+		for _, isComplete := range childComplete {
+			if !isComplete {
+				return false
+			}
+		}
+		return actorRef.State.Data["complete"].(bool)
+	}
+	
+	return false
 }
 
 func (actorRef *Actor) createSelfCommandRoutines(closeActorSelfGoRoutines chan struct{}) {
@@ -107,7 +165,7 @@ func (actorRef *Actor) createSelfCommandRoutines(closeActorSelfGoRoutines chan s
 					
 					var nextTriggerOn time.Duration
 					if triggerDelay <= 0 {
-						nextTriggerOn = time.Minute * 15
+						nextTriggerOn = time.Minute * 1
 					} else {
 						nextTriggerOn = time.Until(scheduledOn)
 					}

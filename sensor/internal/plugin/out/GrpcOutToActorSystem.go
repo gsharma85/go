@@ -25,17 +25,19 @@ func (grpcOut GrpcOutToActorSystem) Deposit(inChan chan sensedata.SenseEvent) {
 		for {
 			select {
 				case event, _ := <- inChan:
-				log.Println("Got file sense event : %s", event)
-				timeStr := event.Time.Format(time.RFC1123)
-				actorPath := strings.ReplaceAll(event.Key, "\\", "/")
-				fileEvent :=  data.FileEvent{}
-				fileEvent.Name  = "HandleCreateOrUpdateFileEvent"
-				fileEvent.ActorSystemPath = grpcOut.ActorSystemPath
-				fileEvent.ActorPath = actorPath
-				fileEvent.Action = event.Action
-				fileEvent.Time = timeStr
-				log.Println("Sending event to Actor system: %s", fileEvent)
-				grpcOut.GrpcOutStream.Send(&fileEvent)
+				if event.Action == "CREATE" {
+					log.Println("Got file sense event : %s", event)
+					timeStr := event.Time.Format(time.RFC1123)
+					actorPath := strings.ReplaceAll(event.Key, "\\", "/")
+					fileEvent :=  data.FileEvent{}
+					fileEvent.Name  = "HandleCreateOrUpdateFileEvent"
+					fileEvent.ActorSystemPath = grpcOut.ActorSystemPath
+					fileEvent.ActorPath = actorPath
+					fileEvent.Action = event.Action
+					fileEvent.Time = timeStr
+					log.Println("Sending event to Actor system: %s", fileEvent)
+					grpcOut.GrpcOutStream.Send(&fileEvent)
+				}			
 			
 				case _, open := <- grpcOut.StopSignal:
 				if !open {

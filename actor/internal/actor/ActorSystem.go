@@ -6,40 +6,65 @@ import (
 	"github.com/gsharma85/go/dataflow/pkg/data"
 	"github.com/gsharma85/go/actor/internal/utils"
 	"log"
+	"strings"
 )
 
 var logger *log.Logger
 
 type ActorSystem struct {
 	Name string
-	Address string
+	RootActorAddress string
 	Actors map[string]*Actor
+	ExternalCommandChan chan Command
+	InternalCommndChan chan Command
 }
 
-func NewActorSystem(configFile string, logfile string, generateCommandHandlers func() map[string]func(Command, State) Response, generateTimeCommands func(actorConfig *data.ActorConfig) map[string]Command) chan Command {
+func NewActorSystem(configFile string, logfile string, generateCommandHandlers func() map[string]func(Command, State) Response, generateTimeCommands func(actorConfig *data.ActorConfig) map[string]Command) ActorSystem {
 
 	logger = utils.Logger(logfile)
 	stopAllActorsSignal := make(chan struct{})
 	
 	actorSystemConfig := parseActorConfig(configFile)
     
+    systemChan := make(chan Command)
     actors := make(map[string]*Actor)
+    actorBuilders := make(map[string]*ActorBuilder)
     
-    commandHandlerMap := generateCommandHandlers()
-    // create Actors
+    // create Actors builders
 	for _, actorConfig := range actorSystemConfig.ActorConfigs {
-	    actor := NewActor(actorConfig.Name, actorConfig.Address, commandHandlerMap, generateTimeCommands(actorConfig), stopAllActorsSignal, logger)
-	    actors[actorConfig.Address] = actor
+	    actorBuilder := NewActorBuilder(actorConfig.Name, actorConfig.Address, generateTimeCommands(actorConfig))
+	    actorBuilders[actorConfig.Address] = &actorBuilder
     }    
-    
-    // Create listen Actor response go routines
 	
-	// Create passivate Actor logic
+	for address, _ := range actorBuilders {
+	    lastIndex := strings.LastIndex(address, "/")
+	    chars := strings.Split(address, "")
+	    
+	    log.Printf("Last index: %d, Length: %d", lastIndex, len(address))
+	    parentPath := strings.Join(chars[:lastIndex], "")
+	    
+	    if address != actorSystemConfig.Address {
+		    log.Printf("Adding %s as child to %s", address, parentPath)
+		    actorBuilders[parentPath].Childs = append(actorBuilders[parentPath].Childs, address)
+	    }    
+    }
+    
+    // Create Actors
+    for _ , actorBuilder := range actorBuilders {
+    	actor := actorBuilder.Build(generateCommandHandlers(), systemChan, stopAllActorsSignal, logger)
+		actors[actor.Address] = actor
+    }
+    
+    // Set root actor complete to true, events will come only on childs
+    actors[actorSystemConfig.Address].State.Data["complete"] = true
+    
+    // Create passivate Actor logic
 	
 	// Listen to commands from outer world
 	
 	// Create send command to Actors go routines
-	return createActorSystemCommandChannel(actors)
+	createActorSystemIntCommandChannel(actors, actorSystemConfig.Address, systemChan)
+	return ActorSystem{actorSystemConfig.Name, actorSystemConfig.Address, actors, createActorSystemExtCommandChannel(actors), systemChan}
 }
 
 func parseActorConfig(filePath string) *data.ActorSystemConfig {
@@ -60,7 +85,7 @@ func parseActorConfig(filePath string) *data.ActorSystemConfig {
 	return &actorSystemConfig
 }
 
-func createActorSystemCommandChannel(actors map[string]*Actor) chan Command {
+func createActorSystemExtCommandChannel(actors map[string]*Actor) chan Command {
 	commandChan := make(chan Command)
 	for i:= 0; i < 10; i++ {
 		go func() {
@@ -75,4 +100,33 @@ func createActorSystemCommandChannel(actors map[string]*Actor) chan Command {
 		}()
 	}
 	return commandChan
+}
+
+func createActorSystemIntCommandChannel(actors map[string]*Actor, actorSystemAddress string, systemChan chan Command) {
+	for i:= 0; i < 10; i++ {
+		go func() {
+			for {
+				command := <-systemChan
+				
+				if command.Name == "ChildCompleteEvent" && command.Payload.(string) != actorSystemAddress {
+					parent := command.ActorPath
+					log.Println("Got child complete command: %s", command)    
+					if parent == "parent" {
+						childAddress := command.Payload.(string)
+						lastIndex := strings.LastIndex(childAddress, "/")
+					    chars := strings.Split(childAddress, "")
+					    parent = strings.Join(chars[:lastIndex], "")
+					}
+					
+					actor := actors[parent]
+					command.ActorPath = parent
+					if actor != nil {
+						log.Println("Forwarding child complete command: %s", command)
+						actor.InChan <- command
+					}
+				}
+				
+			}
+		}()
+	}
 }
