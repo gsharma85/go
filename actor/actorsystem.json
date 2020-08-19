@@ -4,13 +4,33 @@
 	"actorConfigs": [
 		{
 			"name": "File",
+			"address": "/root/gotest",
+			"completeBy": "00:07AM"
+		},
+		{
+			"name": "File",
 			"address": "/root/gotest/indexfile1.txt",
-			"completeBy": "08:46PM"
+			"completeBy": "00:07AM"
 		},
 		{
 			"name": "File",
 			"address": "/root/gotest/indexfile2.txt",
-			"completeBy": "08:47PM"
-		}
+			"completeBy": "00:08AM"
+		},
+		{
+			"name": "File",
+			"address": "/root/gotest/inner",
+			"completeBy": "00:07AM"
+		},
+		{
+			"name": "File",
+			"address": "/root/gotest/inner/indexfile3.txt",
+			"completeBy": "00:07AM"
+		},
+		{
+			"name": "File",
+			"address": "/root/gotest/inner/indexfile4.txt",
+			"completeBy": "00:08AM"
+		}		
 	]
 }
