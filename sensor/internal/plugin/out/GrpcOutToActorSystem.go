@@ -11,6 +11,7 @@ import (
 	grpcservice "github.com/gsharma85/go/dataflow/pkg/grpc"
 	"github.com/gsharma85/go/dataflow/pkg/data"
 	sensedata "github.com/gsharma85/go/sensor/internal/data"
+	"github.com/gsharma85/go/sensor/internal/utils"
 )
 
 type GrpcOutToActorSystem struct {
@@ -53,9 +54,24 @@ func (grpcOut GrpcOutToActorSystem) Deposit(inChan chan sensedata.SenseEvent) {
 
 func CreateGrpcToActorSystemDepositor(senseConfig sensedata.SenseConfig) (GrpcOutToActorSystem,bool) {
 	
-	log.Printf("Dialing grpc connection to Actor System %s", fmt.Sprintf("%s:%s",os.Getenv("ACTOR_SERVICE_HOST"),os.Getenv("ACTOR_SERVICE_PORT")))
+	actorServiceHost,exists := os.LookupEnv("ACTOR_SERVICE_HOST")
 	
-	conn, dialErr := grpc.Dial(fmt.Sprintf("%s:%s",os.Getenv("ACTOR_SERVICE_HOST"),os.Getenv("ACTOR_SERVICE_PORT")), grpc.WithInsecure())
+	if !exists {
+		actorHost,_ := os.Hostname()
+		actorHostIP := utils.GetIpAddress(actorHost)
+		log.Printf("ACTOR_SERVICE_HOST property not set. Using %s as default grpc port.", actorHostIP)
+		actorServiceHost = actorHostIP;
+	}
+	
+	actorServicePortStr,exists := os.LookupEnv("ACTOR_SERVICE_PORT")
+	
+	if !exists {
+		log.Printf("ACTOR_SERVICE_PORT property not set. Using 3000 as default grpc port.")
+		actorServicePortStr = "3000";
+	}
+	
+	log.Printf("Dialing grpc connection to Actor System %s", fmt.Sprintf("%s:%s",actorServiceHost,actorServicePortStr))
+	conn, dialErr := grpc.Dial(fmt.Sprintf("%s:%s",actorServiceHost,actorServicePortStr), grpc.WithInsecure())
 	
 	if dialErr != nil {
 		log.Fatal("Unable to make grpc connection to Actor System: %s", dialErr)

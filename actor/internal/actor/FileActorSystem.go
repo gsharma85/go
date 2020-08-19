@@ -10,8 +10,8 @@ import (
 
 var actorSystem ActorSystem
 
-func NewFileActorSystem(configFile string, logfile string) {
-	actorSystem = NewActorSystem(configFile, logfile, getCommandHandlerMap, getTimedCommands)
+func NewFileActorSystem(configFile string, logfile string, dbDir string) {
+	actorSystem = NewActorSystem(configFile, logfile, dbDir, getCommandHandlerMap, getTimedCommands)
 	startFileEventReceptor(actorSystem.ExternalCommandChan)
 }
 
@@ -25,12 +25,8 @@ func GetFileActorAlerts() []string{
 			childActors := make([]string, 0)
 			for _, actorAddress := range actorsToIterate {
 				actor, _ := actorSystem.Actors[actorAddress] 
-				value, ok := actor.State.Data["Alerts"]
-				if ok {
-					alertStrs := value.([]string)
-					for _, alert := range alertStrs {
-						alerts = append(alerts, fmt.Sprintf("%s: %s", actor.Address, alert))
-					}		
+				for _, alert := range actor.State.Alerts {
+					alerts = append(alerts, fmt.Sprintf("%s: %s", actor.Address, alert))
 				}
 				childActors = append(childActors, actor.Childs...)
 			}	
@@ -54,11 +50,7 @@ func GetFileActorStatus() []string{
 			childActors := make([]string, 0)
 			for _, actorAddress := range actorsToIterate {
 				actor, _ := actorSystem.Actors[actorAddress] 
-				value, ok := actor.State.Data["status"]
-				if ok {
-					complete := value.(bool)
-					status = append(status, fmt.Sprintf("%s: has status %v/n", actor.Address, complete))		
-				}
+				status = append(status, fmt.Sprintf("%s: has status %v/n", actor.Address, actor.State.Status["status"]))
 				childActors = append(childActors, actor.Childs...)
 			}	
 			actorsToIterate = nil
@@ -96,35 +88,14 @@ func getTimedCommands(actorConfig *data.ActorConfig) map[string]Command {
 
 func handleCreateUpdateFileCommand(command Command, state State) Response {
 	fileEvent := command.Payload.(*data.FileEvent)
-	state.Data["MostRecentEvent"] = fileEvent
-	value, ok := state.Data["FileCreateOrUpdateCount"]
 	
-	var count int32
-	if !ok {
-		count = 0
-	} else {
-		count = value.(int32)
-	}
-	
-	count = count + 1;
-	state.Data["FileCreateOrUpdateCount"] = count
-	
-	value, ok = state.Data["Alerts"]
-	
-	var alerts []string
-	if !ok {
-		alerts = make([]string,0)
-	} else {
-		alerts = value.([]string)
-	}
-	
-	if count > 1 {
-		alerts = append(alerts, "File create/updated more than once")
+	if state.Status["FilePresent"] {
+		state.Alerts = append(state.Alerts, "File create/updated more than once")
 		logger.Printf("Alert on file %s - %s", fileEvent.Name, "File create/updated more than once")
 	}
 	
-	state.Data["Alerts"] = alerts
-	state.Data["complete"] = true
+	state.Status["FilePresent"] = true
+	state.Status["nodeComplete"] = true
 	
 	response := Response{command.Name, "Processed"}
 	return response
@@ -134,25 +105,11 @@ func handleCheckFileArrivalCommand(command Command, state State) Response {
 	
 	log.Printf("Start processing file arrival check command.")
 	
-	value, ok := state.Data["Alerts"]
-	
-	var alerts []string
-	
-	if !ok {
-		alerts = make([]string,0)
-	} else {
-		alerts = value.([]string)
-	}
-	
-	count, ok := state.Data["FileCreateOrUpdateCount"]
-	
-	if !ok || count == 0 {
-		alerts = append(alerts, "File not received by configured time.")
+	if !state.Status["FilePresent"]  {
+		state.Alerts = append(state.Alerts, "File not received by configured time.")
 		log.Printf("Alert on file %s - %s", command.ActorPath, "File not received by configured time.")
 		logger.Printf("Alert on file %s - %s", command.ActorPath, "File not received by configured time.")		
 	}
-	
-	state.Data["Alerts"] = alerts
 	
 	response := Response{command.Name, "Processed"}
 	return response

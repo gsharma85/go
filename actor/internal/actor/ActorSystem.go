@@ -19,7 +19,7 @@ type ActorSystem struct {
 	InternalCommndChan chan Command
 }
 
-func NewActorSystem(configFile string, logfile string, generateCommandHandlers func() map[string]func(Command, State) Response, generateTimeCommands func(actorConfig *data.ActorConfig) map[string]Command) ActorSystem {
+func NewActorSystem(configFile string, logfile string, dbDir string, generateCommandHandlers func() map[string]func(Command, State) Response, generateTimeCommands func(actorConfig *data.ActorConfig) map[string]Command) ActorSystem {
 
 	logger = utils.Logger(logfile)
 	stopAllActorsSignal := make(chan struct{})
@@ -32,7 +32,7 @@ func NewActorSystem(configFile string, logfile string, generateCommandHandlers f
     
     // create Actors builders
 	for _, actorConfig := range actorSystemConfig.ActorConfigs {
-	    actorBuilder := NewActorBuilder(actorConfig.Name, actorConfig.Address, generateTimeCommands(actorConfig))
+	    actorBuilder := NewActorBuilder(actorConfig.Name, actorConfig.Address, generateTimeCommands(actorConfig), dbDir)
 	    actorBuilders[actorConfig.Address] = &actorBuilder
     }    
 	
@@ -56,7 +56,7 @@ func NewActorSystem(configFile string, logfile string, generateCommandHandlers f
     }
     
     // Set root actor complete to true, events will come only on childs
-    actors[actorSystemConfig.Address].State.Data["complete"] = true
+    actors[actorSystemConfig.Address].State.Status["complete"] = true
     
     // Create passivate Actor logic
 	

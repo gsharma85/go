@@ -10,11 +10,12 @@ func main() {
 	
 	configFile := flag.String("cf", "config file", "actor config file")
 	logfile := flag.String("lf", "log file", "where event logs will be writtern")
+	dbdir := flag.String("dbdir", "persistent directory", "persistent directory")
 	flag.Parse()
 	
 	stopChan := make(chan struct{})
 	
-	actor.NewFileActorSystem(*configFile, *logfile)
+	actor.NewFileActorSystem(*configFile, *logfile, *dbdir)
 	
 	service.StartQueryActorServer()
 	

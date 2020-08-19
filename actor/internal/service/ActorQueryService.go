@@ -82,7 +82,14 @@ func StartQueryActorServer() {
 	
 	host,_ := os.Hostname()
 	
-	hostPort := fmt.Sprintf("%s:%s", utils.GetIpAddress(host),os.Getenv("ACTOR_HTTP_PORT"))
+	hostPortStr,exists := os.LookupEnv("ACTOR_HTTP_PORT")
+	
+	if !exists {
+		log.Printf("ACTOR_HTTP_PORT property not set. Using 8080 as default grpc port")
+		hostPortStr = "8080";
+	}
+	
+	hostPort := fmt.Sprintf("%s:%s", utils.GetIpAddress(host),hostPortStr)
 	
 	log.Fatal(http.ListenAndServe(hostPort, nil))
 }

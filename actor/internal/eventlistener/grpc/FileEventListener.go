@@ -35,8 +35,14 @@ func StartListener() chan *data.FileEvent {
 	grpcservice.RegisterFileMonitoringActorSystemServiceServer(grpcServer, &grpcInEndpoint)
 	
 	host,_ := os.Hostname()
+	hostPortStr,exists := os.LookupEnv("ACTOR_GRPC_LISTENER_PORT")
 	
-	hostPort := fmt.Sprintf("%s:%s", utils.GetIpAddress(host),os.Getenv("ACTOR_GRPC_LISTENER_PORT"))
+	if !exists {
+		log.Printf("ACTOR_GRPC_LISTENER_PORT property not set. Using 3000 as default grpc port")
+		hostPortStr = "3000";
+	}
+	
+	hostPort := fmt.Sprintf("%s:%s", utils.GetIpAddress(host),hostPortStr)
 	
 	log.Printf("Starting grpc listener on %s", hostPort)
 	lis, err := net.Listen("tcp", hostPort)

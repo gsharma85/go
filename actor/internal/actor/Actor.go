@@ -3,10 +3,17 @@ package actor
 import (
 	"time"
 	"log"
+	"hash/fnv"
+	"fmt"
+	"io/ioutil"
+	"encoding/json"
+	"os"
 )
 
 type State struct {
-	Data map[string]interface{}
+	Alerts []string
+	Status map[string]bool
+	ChildStatus map[string]bool
 }
 
 
@@ -38,6 +45,7 @@ type Actor struct {
 	SystemChan chan Command
 	stopActorSystemSignal chan struct{} 
 	logger *log.Logger
+	DbDir string
 }
 
 type ActorBuilder struct {
@@ -46,34 +54,36 @@ type ActorBuilder struct {
 	Address string
 	Childs []string
 	TimedCommands map[string]Command
+	DbDir string
 }
 
-func NewActorBuilder(name string, address string, timedCommands map[string]Command) ActorBuilder {
+func NewActorBuilder(name string, address string, timedCommands map[string]Command, DbDir string) ActorBuilder {
 	actorBuilder := ActorBuilder{}
 	actorBuilder.Name = name
 	actorBuilder.Address = address
 	actorBuilder.Childs = make([]string, 0)
 	actorBuilder.TimedCommands = timedCommands
+	actorBuilder.DbDir = DbDir
 	return actorBuilder
 }
 
 func(ab *ActorBuilder) Build(commandProcessors map[string]func(Command, State) Response, systemChan chan Command, stopActorSystemSignal chan struct{}, logger *log.Logger) *Actor {
 	inChan := make(chan Command)
-	state := State{make(map[string]interface{})}
+	state := State{make([]string,0),make(map[string]bool), nil}
 	processor := Processor{commandProcessors, ab.TimedCommands}
-	actor := Actor{ab.Name, ab.Type, ab.Address, ab.Childs, state, processor, inChan, systemChan, stopActorSystemSignal, logger}
+	actor := Actor{ab.Name, ab.Type, ab.Address, ab.Childs, state, processor, inChan, systemChan, stopActorSystemSignal, logger, ab.DbDir}
 	
 	if len(actor.Childs) != 0 {
 		childStatus := make(map[string]bool)
 		for _, cAddress := range actor.Childs {
 			childStatus[cAddress] = false
 		}
-		actor.State.Data["childComplete"] = childStatus
+		actor.State.ChildStatus = childStatus
 	}
 	
-	actor.State.Data["complete"] = false
-	actor.State.Data["status"] = false
-	
+	actor.State.Status["nodeComplete"] = false
+	actor.State.Status["status"] = false
+	actor.loadState()
 	// Load generic commands like buildState, passivateActor, getState, pushStateOnChannel
 	processor.CommandProcessor["ChildCompleteEvent"] = childStateCompleteProcessor
 	
@@ -88,9 +98,57 @@ func(ab *ActorBuilder) Build(commandProcessors map[string]func(Command, State) R
 	return &actor
 }
 
+func (actor *Actor) loadState() {
+	stateFileName := actor.getActorStateFileName()
+	log.Printf("Check if state file exists")
+	if stateFileExists(stateFileName) {
+		log.Printf("Loading state file.")
+		file, err := ioutil.ReadFile(stateFileName)
+	
+		if err != nil {
+			logger.Println("Error reading file :%s. Error is: %s", stateFileName, err)
+		} 
+	
+		log.Printf("Unmarshalling state file.")
+		var state State 
+		err = json.Unmarshal([]byte(file), &state)
+		actor.State = state
+		if err != nil {
+			logger.Println("Error Unmarshalling into Actor.State. Error is: %s", err)
+		}
+	}
+}
+
+func (actor *Actor) persistState() {
+	stateFileName := actor.getActorStateFileName()
+	byteArr, err := json.Marshal(actor.State)
+	if err != nil {
+		logger.Println("Error marshalling actor %s state. %s", actor.Address, err)
+	}
+	err = ioutil.WriteFile(stateFileName, byteArr, 0600)
+	if err != nil {
+		logger.Println("Error writing actor %s state. %s", actor.Address, err)
+	}
+}
+
+func (actor *Actor) getActorStateFileName() string {
+	h := fnv.New32a()
+    h.Write([]byte(actor.Address))
+    return fmt.Sprintf("%s/actor-%d.db", actor.DbDir, h.Sum32())
+}
+
+func stateFileExists(name string) bool {
+    if _, err := os.Stat(name); err != nil {
+        if os.IsNotExist(err) {
+            return false
+        }
+    }
+    return true
+}
+
 func childStateCompleteProcessor(cmd Command, state State) Response {
 	childAddress := cmd.Payload.(string)
-	state.Data["childComplete"].(map[string]bool)[childAddress] = true
+	state.ChildStatus[childAddress] = true
 	return Response{cmd.Name, "Processed"}
 }
 
@@ -114,8 +172,9 @@ func (actorRef *Actor) createExternalCommandRoutine(closeActorSelfGoRoutines cha
 				
 				isComplete := actor.stateCheck()
 				
-				actor.State.Data["status"] = isComplete
+				actor.State.Status["status"] = isComplete
 				
+				actor.persistState()
 				if isComplete {
 					log.Println("Sending child complete command for: %s", actor.Address)
 					actor.SystemChan <- Command{"ChildCompleteEvent", "parent", time.Now(), actor.Address}
@@ -139,15 +198,15 @@ func (actorRef *Actor) createExternalCommandRoutine(closeActorSelfGoRoutines cha
 
 func (actorRef *Actor) stateCheck() bool {
 	if len(actorRef.Childs) == 0 {
-		return actorRef.State.Data["complete"].(bool)
+		return actorRef.State.Status["nodeComplete"]
 	} else {
-		childComplete := actorRef.State.Data["childComplete"].(map[string]bool)
+		childComplete := actorRef.State.ChildStatus
 		for _, isComplete := range childComplete {
 			if !isComplete {
 				return false
 			}
 		}
-		return actorRef.State.Data["complete"].(bool)
+		return actorRef.State.Status["nodeComplete"]
 	}
 	
 	return false
