@@ -2,6 +2,7 @@ FROM golang:1.14
 
 # Set up github ssh keys
 RUN mkdir /root/actor
+RUN mkdir /root/actor/state
 WORKDIR /root/actor
 COPY actorsystem.json .
 
@@ -27,4 +28,4 @@ WORKDIR /
 RUN /root/.ssh/go-get.sh /root/.ssh/id_rsa /root/.ssh/passfile
 
 
-CMD ["/go/bin/actor", "-cf" , "/root/actor/actorsystem.json", "-lf", "/root/actor/actor.log"]
+CMD ["/go/bin/actor", "-cf" , "/root/actor/actorsystem.json", "-lf", "/root/actor/actor.log", "-dbdir", "/root/actor/state"]
