@@ -4,6 +4,8 @@ metadata:
   name: sensor-config
   namespace: default
 data:
+  ACTOR_SERVICE_HOST_PROP_NAME: "CONNECT_ACTOR_SERVICE_HOST"
+  ACTOR_SERVICE_PORT_PROP_NAME: "CONNECT_ACTOR_SERVICE_PORT"
   CONNECT_ACTOR_SERVICE_HOST: "127.0.0.1"
   CONNECT_ACTOR_SERVICE_PORT: "3031"
 ---
@@ -58,6 +60,16 @@ spec:
             configMapKeyRef:
               name: sensor-config
               key: CONNECT_ACTOR_SERVICE_PORT
+        - name: ACTOR_SERVICE_HOST_PROP_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: sensor-config
+              key: ACTOR_SERVICE_HOST_PROP_NAME
+        - name: ACTOR_SERVICE_PORT_PROP_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: sensor-config
+              key: ACTOR_SERVICE_PORT_PROP_NAME
         ports:
           - containerPort: 3000
       imagePullSecrets:

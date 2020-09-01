@@ -1,4 +1,13 @@
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sensor-config
+  namespace: default
+data:
+  ACTOR_SERVICE_HOST_PROP_NAME: "ACTOR_SERVICE_HOST"
+  ACTOR_SERVICE_PORT_PROP_NAME: "ACTOR_SERVICE_PORT"
+---
+apiVersion: v1
 kind: Secret
 metadata:
   name: myregistrykey
@@ -37,6 +46,17 @@ spec:
       - name: sensor
         image: gauravsharmanitk/sensor
         imagePullPolicy: IfNotPresent
+        env:
+        - name: ACTOR_SERVICE_HOST_PROP_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: sensor-config
+              key: ACTOR_SERVICE_HOST_PROP_NAME
+        - name: ACTOR_SERVICE_PORT_PROP_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: sensor-config
+              key: ACTOR_SERVICE_PORT_PROP_NAME
         ports:
           - containerPort: 3000
       imagePullSecrets:
