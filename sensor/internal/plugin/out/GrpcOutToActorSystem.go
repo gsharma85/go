@@ -54,19 +54,22 @@ func (grpcOut GrpcOutToActorSystem) Deposit(inChan chan sensedata.SenseEvent) {
 
 func CreateGrpcToActorSystemDepositor(senseConfig sensedata.SenseConfig) (GrpcOutToActorSystem,bool) {
 	
-	actorServiceHost,exists := os.LookupEnv("ACTOR_SERVICE_HOST")
+	actorServiceHostPropName,exists := os.LookupEnv("ACTOR_SERVICE_HOST_PROP_NAME")
+	actorServicePortPropName,exists := os.LookupEnv("ACTOR_SERVICE_PORT_PROP_NAME")
+	
+	actorServiceHost,exists := os.LookupEnv(actorServiceHostPropName)
 	
 	if !exists {
 		actorHost,_ := os.Hostname()
 		actorHostIP := utils.GetIpAddress(actorHost)
-		log.Printf("ACTOR_SERVICE_HOST property not set. Using %s as default grpc port.", actorHostIP)
+		log.Printf("%s property not set. Using %s as default grpc port.", actorServiceHostPropName, actorHostIP)
 		actorServiceHost = actorHostIP;
 	}
 	
-	actorServicePortStr,exists := os.LookupEnv("ACTOR_SERVICE_PORT")
+	actorServicePortStr,exists := os.LookupEnv(actorServicePortPropName)
 	
 	if !exists {
-		log.Printf("ACTOR_SERVICE_PORT property not set. Using 3000 as default grpc port.")
+		log.Printf("%s property not set. Using 3000 as default grpc port.", actorServicePortPropName)
 		actorServicePortStr = "3000";
 	}
 	

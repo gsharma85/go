@@ -44,6 +44,8 @@ spec:
     metadata:
       labels:
         name: actor
+      annotations:
+        'consul.hashicorp.com/connect-inject': 'true'
     spec:
       containers:
       - name: actor
