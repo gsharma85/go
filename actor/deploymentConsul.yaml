@@ -6,6 +6,7 @@ metadata:
 data:
   ACTOR_HTTP_PORT: "8080"
   ACTOR_GRPC_LISTENER_PORT: "3000"
+  ACTOR_GRPC_LISTENER_LOCAL_HOST: "true"
 ---
 apiVersion: v1
 kind: Service
@@ -46,18 +47,24 @@ spec:
         name: actor
       annotations:
         'consul.hashicorp.com/connect-inject': 'true'
+        'consul.hashicorp.com/connect-service-port': '3000'
         'consul.hashicorp.com/connect-service-protocol': 'grpc'
     spec:
       containers:
       - name: actor
         image: gauravsharmanitk/actor
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         env:
         - name: ACTOR_HTTP_PORT
           valueFrom:
             configMapKeyRef:
               name: actor-config
               key: ACTOR_HTTP_PORT
+        - name: ACTOR_GRPC_LISTENER_LOCAL_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: actor-config
+              key: ACTOR_GRPC_LISTENER_LOCAL_HOST
         - name: ACTOR_GRPC_LISTENER_PORT
           valueFrom:
             configMapKeyRef:
