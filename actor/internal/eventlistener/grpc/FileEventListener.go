@@ -20,10 +20,9 @@ func (grpcInEndpoint *fileEventInEndPoint) HandleFileEvent(stream grpcservice.Fi
 		fileEvent, err := stream.Recv()
 		if err != nil {
 			log.Printf("Error reading from grpc event stream: %s", err)
-			close(grpcInEndpoint.EventInChan)
-			return nil
-		}	
-		grpcInEndpoint.EventInChan <- fileEvent
+		} else if fileEvent != nil {
+			grpcInEndpoint.EventInChan <- fileEvent
+		}		
 	}
 }
 

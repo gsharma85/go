@@ -45,6 +45,7 @@ spec:
       annotations:
         'consul.hashicorp.com/connect-inject': 'true'
         'consul.hashicorp.com/connect-service-protocol': 'grpc'
+        'consul.hashicorp.com/connect-service-port': '3000'
         'consul.hashicorp.com/connect-service-upstreams': 'actor:8502'
     spec:
       containers:
