@@ -122,8 +122,10 @@ func startFileEventReceptor(commandInChan chan Command) {
 		for {
 			fileEvent := <- fileEventInChan
 			log.Printf("Got file event: %s", fileEvent)
-			command := Command{fileEvent.Name, fileEvent.ActorPath, time.Now(), fileEvent}
-			commandInChan <- command
+			if fileEvent != nil {
+				command := Command{fileEvent.Name, fileEvent.ActorPath, time.Now(), fileEvent}
+				commandInChan <- command
+			}
 		}
 	}()
 	
