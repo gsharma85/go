@@ -7,7 +7,7 @@ data:
   ACTOR_SERVICE_HOST_PROP_NAME: "CONNECT_ACTOR_SERVICE_HOST"
   ACTOR_SERVICE_PORT_PROP_NAME: "CONNECT_ACTOR_SERVICE_PORT"
   CONNECT_ACTOR_SERVICE_HOST: "127.0.0.1"
-  CONNECT_ACTOR_SERVICE_PORT: "3031"
+  CONNECT_ACTOR_SERVICE_PORT: "8502"
 ---
 apiVersion: v1
 kind: Secret
@@ -42,12 +42,14 @@ spec:
     metadata:
       labels:
         name: sensor
-      'consul.hashicorp.com/connect-inject': 'true'
-      'consul.hashicorp.com/connect-service-upstreams': 'actor:3031'
+      annotations:
+        'consul.hashicorp.com/connect-inject': 'true'
+        'consul.hashicorp.com/connect-service-protocol': 'grpc'
+        'consul.hashicorp.com/connect-service-upstreams': 'actor:8502'
     spec:
       containers:
       - name: sensor
-        image: gauravsharmanitk/sensor
+        image: gauravsharmanitk/sensor:latest
         imagePullPolicy: IfNotPresent
         env:
         - name: CONNECT_ACTOR_SERVICE_HOST
@@ -72,5 +74,6 @@ spec:
               key: ACTOR_SERVICE_PORT_PROP_NAME
         ports:
           - containerPort: 3000
+            name: "tcp"
       imagePullSecrets:
       - name: myregistrykey

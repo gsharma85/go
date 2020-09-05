@@ -46,6 +46,7 @@ spec:
         name: actor
       annotations:
         'consul.hashicorp.com/connect-inject': 'true'
+        'consul.hashicorp.com/connect-service-protocol': 'grpc'
     spec:
       containers:
       - name: actor
@@ -64,3 +65,5 @@ spec:
               key: ACTOR_GRPC_LISTENER_PORT
         ports:
           - containerPort: 3000
+            name: "tcp"
+          
