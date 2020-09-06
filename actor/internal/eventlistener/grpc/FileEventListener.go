@@ -13,6 +13,7 @@ import (
 
 type fileEventInEndPoint struct {
 	EventInChan chan *data.FileEvent
+	grpcServer *grpc.Server
 }
 
 func (grpcInEndpoint *fileEventInEndPoint) HandleFileEvent(stream grpcservice.FileMonitoringActorSystemService_HandleFileEventServer) error {
@@ -20,16 +21,23 @@ func (grpcInEndpoint *fileEventInEndPoint) HandleFileEvent(stream grpcservice.Fi
 		fileEvent, err := stream.Recv()
 		if err != nil {
 			log.Printf("Error reading from grpc event stream: %s", err)
+			grpcInEndpoint.restartListener()
+			return err
 		} else if fileEvent != nil {
 			grpcInEndpoint.EventInChan <- fileEvent
 		}		
 	}
 }
 
+func (grpcInEndpoint *fileEventInEndPoint) restartListener() {
+	grpcservice.RegisterFileMonitoringActorSystemServiceServer(grpcInEndpoint.grpcServer, grpcInEndpoint)
+}
+
 func StartListener() chan *data.FileEvent {
 	eventInChan := make(chan *data.FileEvent)
-	grpcInEndpoint := fileEventInEndPoint{eventInChan}
 	grpcServer := grpc.NewServer()
+	
+	grpcInEndpoint := fileEventInEndPoint{eventInChan, grpcServer}
 	
 	grpcservice.RegisterFileMonitoringActorSystemServiceServer(grpcServer, &grpcInEndpoint)
 	
