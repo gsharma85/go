@@ -17,7 +17,7 @@ import (
 type GrpcOutToActorSystem struct {
 	ActorSystemPath string
 	StopSignal chan struct{}
-	GrpcOutStream grpcservice.FileMonitoringActorSystemService_HandleFileEventClient
+	Client grpcservice.FileMonitoringActorSystemServiceClient
 }
 
 func (grpcOut GrpcOutToActorSystem) Deposit(inChan chan sensedata.SenseEvent) {
@@ -37,7 +37,16 @@ func (grpcOut GrpcOutToActorSystem) Deposit(inChan chan sensedata.SenseEvent) {
 					fileEvent.Action = event.Action
 					fileEvent.Time = timeStr
 					log.Println("Sending event to Actor system: %s", fileEvent)
-					grpcOut.GrpcOutStream.Send(&fileEvent)
+					
+					clientStream, err := grpcOut.Client.HandleFileEvent(context.Background())
+	
+					if err != nil {
+						log.Fatal("Error opening client stream to Actor System: %s", err)
+					} else {
+						clientStream.Send(&fileEvent)
+						clientStream.CloseAndRecv()
+					}
+					
 				}			
 			
 				case _, open := <- grpcOut.StopSignal:
@@ -82,12 +91,7 @@ func CreateGrpcToActorSystemDepositor(senseConfig sensedata.SenseConfig) (GrpcOu
 	}
 	
 	client := grpcservice.NewFileMonitoringActorSystemServiceClient(conn)
-	clientStream, err := client.HandleFileEvent(context.Background())
-	
-	if err != nil {
-		log.Fatal("Error opening client stream to Actor System: %s", err)
-	}
-	
-	return GrpcOutToActorSystem{senseConfig.ActorSystemConfigData.Address, senseConfig.StopSignal, clientStream}, true
+		
+	return GrpcOutToActorSystem{senseConfig.ActorSystemConfigData.Address, senseConfig.StopSignal, client}, true
 }
 

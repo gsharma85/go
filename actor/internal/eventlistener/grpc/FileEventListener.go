@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"fmt"
+	"io"
 )
 
 type fileEventInEndPoint struct {
@@ -21,16 +22,20 @@ func (grpcInEndpoint *fileEventInEndPoint) HandleFileEvent(stream grpcservice.Fi
 		fileEvent, err := stream.Recv()
 		if err != nil {
 			log.Printf("Error reading from grpc event stream: %s", err)
-			grpcInEndpoint.restartListener()
+			ackEvent := data.AckEvent{}
+			ackEvent.Ack = 1
+			stream.SendAndClose(&ackEvent)
 			return err
-		} else if fileEvent != nil {
-			grpcInEndpoint.EventInChan <- fileEvent
-		}		
+		} 
+		
+		if fileEvent == nil || err == io.EOF {
+			ackEvent := data.AckEvent{}
+			ackEvent.Ack = 0
+			stream.SendAndClose(&ackEvent)
+		}
+		
+		grpcInEndpoint.EventInChan <- fileEvent
 	}
-}
-
-func (grpcInEndpoint *fileEventInEndPoint) restartListener() {
-	grpcservice.RegisterFileMonitoringActorSystemServiceServer(grpcInEndpoint.grpcServer, grpcInEndpoint)
 }
 
 func StartListener() chan *data.FileEvent {
