@@ -51,7 +51,7 @@ spec:
       containers:
       - name: sensor
         image: gauravsharmanitk/sensor:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         env:
         - name: CONNECT_ACTOR_SERVICE_HOST
           valueFrom:
