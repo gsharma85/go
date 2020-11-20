@@ -18,7 +18,7 @@ type State struct {
 
 
 type Processor struct {
-	CommandProcessor map[string]func(Command, State) Response
+	CommandProcessor map[string]func(Command, *State) Response
 	TimedCommands map[string]Command
 }
 
@@ -39,7 +39,7 @@ type Actor struct {
 	Type string
 	Address string
 	Childs []string
-	State State
+	State *State
 	processor Processor
 	InChan chan Command
 	SystemChan chan Command
@@ -67,11 +67,11 @@ func NewActorBuilder(name string, address string, timedCommands map[string]Comma
 	return actorBuilder
 }
 
-func(ab *ActorBuilder) Build(commandProcessors map[string]func(Command, State) Response, systemChan chan Command, stopActorSystemSignal chan struct{}, logger *log.Logger) *Actor {
+func(ab *ActorBuilder) Build(commandProcessors map[string]func(Command, *State) Response, systemChan chan Command, stopActorSystemSignal chan struct{}, logger *log.Logger) *Actor {
 	inChan := make(chan Command)
 	state := State{make([]string,0),make(map[string]bool), nil}
 	processor := Processor{commandProcessors, ab.TimedCommands}
-	actor := Actor{ab.Name, ab.Type, ab.Address, ab.Childs, state, processor, inChan, systemChan, stopActorSystemSignal, logger, ab.DbDir}
+	actor := Actor{ab.Name, ab.Type, ab.Address, ab.Childs, &state, processor, inChan, systemChan, stopActorSystemSignal, logger, ab.DbDir}
 	
 	if len(actor.Childs) != 0 {
 		childStatus := make(map[string]bool)
@@ -112,7 +112,7 @@ func (actor *Actor) loadState() {
 		log.Printf("Unmarshalling state file.")
 		var state State 
 		err = json.Unmarshal([]byte(file), &state)
-		actor.State = state
+		actor.State = &state
 		if err != nil {
 			logger.Println("Error Unmarshalling into Actor.State. Error is: %s", err)
 		}
@@ -146,7 +146,7 @@ func stateFileExists(name string) bool {
     return true
 }
 
-func childStateCompleteProcessor(cmd Command, state State) Response {
+func childStateCompleteProcessor(cmd Command, state *State) Response {
 	childAddress := cmd.Payload.(string)
 	state.ChildStatus[childAddress] = true
 	return Response{cmd.Name, "Processed"}

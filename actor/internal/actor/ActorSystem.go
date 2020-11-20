@@ -19,7 +19,7 @@ type ActorSystem struct {
 	InternalCommndChan chan Command
 }
 
-func NewActorSystem(configFile string, logfile string, dbDir string, generateCommandHandlers func() map[string]func(Command, State) Response, generateTimeCommands func(actorConfig *data.ActorConfig) map[string]Command) ActorSystem {
+func NewActorSystem(configFile string, logfile string, dbDir string, generateCommandHandlers func() map[string]func(Command, *State) Response, generateTimeCommands func(actorConfig *data.ActorConfig) map[string]Command) ActorSystem {
 
 	logger = utils.Logger(logfile)
 	stopAllActorsSignal := make(chan struct{})

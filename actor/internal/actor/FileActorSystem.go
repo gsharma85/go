@@ -24,7 +24,8 @@ func GetFileActorAlerts() []string{
 		if len(actorsToIterate) != 0 {
 			childActors := make([]string, 0)
 			for _, actorAddress := range actorsToIterate {
-				actor, _ := actorSystem.Actors[actorAddress] 
+				actor, _ := actorSystem.Actors[actorAddress]
+				log.Printf("%s - %s", actor.Address, actor.State) 
 				for _, alert := range actor.State.Alerts {
 					alerts = append(alerts, fmt.Sprintf("%s: %s", actor.Address, alert))
 				}
@@ -50,6 +51,7 @@ func GetFileActorStatus() []string{
 			childActors := make([]string, 0)
 			for _, actorAddress := range actorsToIterate {
 				actor, _ := actorSystem.Actors[actorAddress] 
+				log.Printf("%s - %s", actor.Address, actor.State)
 				status = append(status, fmt.Sprintf("%s: has status %v/n", actor.Address, actor.State.Status["status"]))
 				childActors = append(childActors, actor.Childs...)
 			}	
@@ -63,8 +65,8 @@ func GetFileActorStatus() []string{
 	return status
 }
 
-func getCommandHandlerMap() map[string]func(Command, State) Response {
-	commandMap := make(map[string]func(Command, State) Response)
+func getCommandHandlerMap() map[string]func(Command, *State) Response {
+	commandMap := make(map[string]func(Command, *State) Response)
 	commandMap["HandleCreateOrUpdateFileEvent"] = handleCreateUpdateFileCommand
 	commandMap["HandleCheckFileArrival"] = handleCheckFileArrivalCommand
 	
@@ -86,7 +88,7 @@ func getTimedCommands(actorConfig *data.ActorConfig) map[string]Command {
 }
 
 
-func handleCreateUpdateFileCommand(command Command, state State) Response {
+func handleCreateUpdateFileCommand(command Command, state *State) Response {
 	fileEvent := command.Payload.(*data.FileEvent)
 	
 	if state.Status["FilePresent"] {
@@ -101,7 +103,7 @@ func handleCreateUpdateFileCommand(command Command, state State) Response {
 	return response
 }
 
-func handleCheckFileArrivalCommand(command Command, state State) Response {
+func handleCheckFileArrivalCommand(command Command, state *State) Response {
 	
 	log.Printf("Start processing file arrival check command.")
 	
