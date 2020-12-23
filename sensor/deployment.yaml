@@ -45,7 +45,7 @@ spec:
       containers:
       - name: sensor
         image: gauravsharmanitk/sensor
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         env:
         - name: ACTOR_SERVICE_HOST_PROP_NAME
           valueFrom:
