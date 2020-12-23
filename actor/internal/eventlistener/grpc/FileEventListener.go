@@ -28,13 +28,11 @@ func (grpcInEndpoint *fileEventInEndPoint) HandleFileEvent(stream grpcservice.Fi
 			return err
 		} 
 		
-		if fileEvent == nil || err == io.EOF {
-			ackEvent := data.AckEvent{}
-			ackEvent.Ack = 0
-			stream.SendAndClose(&ackEvent)
-		}
-		
 		grpcInEndpoint.EventInChan <- fileEvent
+		
+		ackEvent := data.AckEvent{}
+		ackEvent.Ack = 0
+		stream.SendAndClose(&ackEvent)
 	}
 }
 
