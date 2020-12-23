@@ -9,7 +9,6 @@ import (
 	"net"
 	"os"
 	"fmt"
-	"io"
 )
 
 type fileEventInEndPoint struct {
