@@ -48,7 +48,7 @@ spec:
       containers:
       - name: actor
         image: gauravsharmanitk/actor
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         env:
         - name: ACTOR_HTTP_PORT
           valueFrom:

@@ -1,11 +1,6 @@
 FROM golang:1.14
 
 # Set up github ssh keys
-RUN mkdir /root/actor
-RUN mkdir /root/actor/state
-WORKDIR /root/actor
-COPY actorsystem.json .
-
 RUN mkdir /root/.ssh
 WORKDIR /root/.ssh
 COPY id_rsa .
@@ -25,7 +20,17 @@ RUN go env -w GOPRIVATE=github.com/gsharma85/go/
 RUN echo "[url \"git@github.com:\"]\n\tinsteadOf = https://github.com/" >> /root/.gitconfig
 RUN echo "StrictHostKeyChecking no" > /root/.ssh/config
 WORKDIR /
-RUN /root/.ssh/go-get.sh /root/.ssh/id_rsa /root/.ssh/passfile
+RUN CGO_ENABLED=0 GOOS=linux /root/.ssh/go-get.sh /root/.ssh/id_rsa /root/.ssh/passfile
 
+FROM alpine:latest 
+RUN mkdir /root/actor
+RUN mkdir /root/actor/state
+WORKDIR /root/actor
+COPY actorsystem.json .
 
+WORKDIR /
+RUN mkdir /go/
+RUN mkdir /go/bin
+
+COPY --from=0 /go/bin/actor /go/bin/
 CMD ["/go/bin/actor", "-cf" , "/root/actor/actorsystem.json", "-lf", "/root/actor/actor.log", "-dbdir", "/root/actor/state"]
